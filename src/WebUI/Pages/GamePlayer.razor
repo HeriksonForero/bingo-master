@@ -1,0 +1,77 @@
+@page "/gameplayer"
+
+@using WebUI.ViewModels
+@using WebUI.Components
+
+@inject GamePlayerViewModel player
+
+@if (player.CanSelectGameSectionBeShown)
+{
+    <h1 style=@(player.PlayableGames.Count > 0 ? "" : "display: none;")>Selecciona el Juego al que quieres unirte</h1>
+    <h1 style=@(player.PlayableGames.Count == 0 ? "" : "display: none;")>No existen juegos iniciados aún. Habla con el administrador del juego, para que inicie uno</h1>
+    <div class="container-fluid" translate="no">
+        <div class="row">
+            @foreach (var game in player.PlayableGames)
+            {
+                <div class="col">
+                    <button class="btn btn-outline-primary" @onclick=@(() => player.SelectGame(game))>@game.Name</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (player.CanSelectPlayerInGameSectionBeShown)
+{
+    <h3>Ahora por favor, cuéntanos quién eres tú, dentro del juego "@player.GameSelected.Name"</h3>
+    <div class="container-fluid" translate="no">
+        <div class="row">
+            @foreach (var p in player.GameSelected.Players)
+            {
+                <div class="col">
+                    <button class="btn btn-outline-primary" @onclick=@(() => player.SelectPlayer(p))>@p.Name</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (player.CanPlayerSelectedSectionBeShown)
+{
+    <h3>Hola @player.PlayerModel.Name, bienvenido al juego @player.GameSelected.Name</h3>
+
+    <div class="bingo-balls-played"
+         style="display: @(player.PlayedBalls.Count > 0 ? "block" : "none")">
+        <h4>Bolas jugadas (en el orden en que fueron jugadas)</h4>
+        <div style="width: 70vw; overflow-x: auto; white-space: nowrap;">
+            @foreach (var ball in player.PlayedBalls)
+            {
+                <button disabled class="btn btn-outline-info">@ball.Name</button>
+            }
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            @foreach (var board in player.PlayerModel.Boards)
+            {
+                <div class="col-lg-6">
+                    <PlayerBoard GameType=@player.PlayerModel.GameType
+                                 Balls=@board.Balls />
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await player.InitializeComponent(() => UpdateUI());
+    }
+
+    private void UpdateUI()
+    {
+        StateHasChanged();
+    }
+}

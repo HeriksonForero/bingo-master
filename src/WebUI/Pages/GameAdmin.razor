@@ -1,0 +1,169 @@
+﻿@page "/admin"
+
+@using WebUI.ViewModels
+@using WebUI.Components
+
+@inject GameAdmonViewModel admon
+
+<h1>Administración de Juegos</h1>
+
+@if (admon.CanAuthenticatingAdminSectionBeShown)
+{
+    <h3>Por favor, autentícate como Administrador del Juego</h3>
+    <EditForm Model=admon.AdminLoginModel OnValidSubmit=@(async () => await admon.AuthenticateAdmin())>
+        <DataAnnotationsValidator />
+        <div class="form-row">
+            <div class="col">
+                <label for=@admon.AdminLoginModel.Passwd>Contraseña</label>
+                <InputText type="password" class="form-control" placeholder="Escribe la Contraseña del Administrador del Juego" @bind-Value=admon.AdminLoginModel.Passwd />
+                <ValidationMessage For="@(() => admon.AdminLoginModel.Passwd)" />
+            </div>
+        </div>
+        <br /><br />
+        <button type="submit" class="btn btn-primary">Ingresar como Administrador al Juego</button>
+    </EditForm>
+}
+
+@if (admon.CanLandingBeShown)
+{
+    <button class="btn btn-primary" @onclick=admon.TransitionToNewGame>Crear nuevo juego</button>
+    <button class="btn btn-warning" style="visibility: @(admon.IsItInDevMode ? "visible" : "hidden")" @onclick=admon.AddTestGames>Agregar juegos de prueba</button>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Jugadores</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var game in admon.Games)
+            {
+                <tr>
+                    <td><button type="button" class="btn btn-link" @onclick=@(() => admon.TransitionToEditGame(game))>@game.Name</button></td>
+                    <td>@game.PlayerCount</td>
+                    <td>@game.GameType</td>
+                    <td>@game.State</td>
+                    <td><button class="btn btn-danger" @onclick=@(() => { admon.DeleteGame(game); UpdateUI(); })>Borrar</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (admon.CanNewGameSectionBeShown)
+{
+    <EditForm Model=admon.CurrentGame OnValidSubmit=admon.CreateNewGame>
+        <DataAnnotationsValidator />
+        <div class="form-row">
+            <div class="col">
+                <label for=@admon.CurrentGame.Name>Nombre del Juego</label>
+                <InputText type="text" class="form-control" placeholder="Escriba un nombre del juego" @bind-Value=admon.CurrentGame.Name />
+                <ValidationMessage For="@(() => admon.CurrentGame.Name)" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col">
+                <label for=@admon.CurrentGame.GameType>Selecciona el tipo de juego</label>
+                <ul class="list-group">
+                    <li class="list-group-item @(admon.CurrentGame.GameType == Core.GameType.STANDARD ? "active" : "")"
+                        @onclick=@(() => admon.CurrentGame.GameType = Core.GameType.STANDARD)
+                        style="cursor: pointer">Estándar</li>
+
+                    <li class="list-group-item @(admon.CurrentGame.GameType == Core.GameType.O ? "active" : "")"
+                        @onclick=@(() => admon.CurrentGame.GameType = Core.GameType.O)
+                        style="cursor: pointer">Tipo O</li>
+
+                    <li class="list-group-item @(admon.CurrentGame.GameType == Core.GameType.X ? "active" : "")"
+                        @onclick=@(() => admon.CurrentGame.GameType = Core.GameType.X)
+                        style="cursor: pointer">Tipo X</li>
+
+                    <li class="list-group-item @(admon.CurrentGame.GameType == Core.GameType.T ? "active" : "")"
+                        @onclick=@(() => admon.CurrentGame.GameType = Core.GameType.T)
+                        style="cursor: pointer">Tipo T</li>
+
+                    <li class="list-group-item @(admon.CurrentGame.GameType == Core.GameType.L ? "active" : "")"
+                        @onclick=@(() => admon.CurrentGame.GameType = Core.GameType.L)
+                        style="cursor: pointer">Tipo L</li>
+                </ul>
+                <ValidationMessage For="@(() => admon.CurrentGame.GameType)" />
+            </div>
+        </div>
+        <button type="reset" class="btn btn-secondary" @onclick=admon.CancelCreatingNewGame>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear juego</button>
+    </EditForm>
+}
+
+@if (admon.CanEditGameSectionBeShown)
+{
+    <h2>Juego: @admon.CurrentGame.Name <span class="badge badge-info">Tipo @admon.CurrentGame.GameType - @admon.CurrentGame.State</span></h2>
+    <button class="btn btn-outline-info" @onclick=admon.TransitionToBrowsing>Regresar a listado de juegos</button>
+    <button class="btn btn-primary" @onclick=admon.TransitionToNewPlayer style=@(admon.CurrentGame.IsItADraftGame ? "" : "display: none;")>Crear nuevo jugador</button>
+    <button class="btn btn-info" @onclick=admon.TransitionToCopyPlayersFromOtherGame style=@(admon.CurrentGame.IsItADraftGame ? "" : "display: none;")>Copiar jugadores desde otro Juego</button>
+    <button class="btn btn-warning" @onclick=admon.AddTestPlayers style=@(admon.CurrentGame.IsItADraftGame && admon.IsItInDevMode ? "" : "display: none;")>Agregar jugadores de prueba</button>
+    <button class="btn btn-success float-right" @onclick=admon.StartGame style=@(admon.CurrentGame.IsItADraftGame ? "" : "display: none;")>Iniciar juego</button>
+
+    <Players List=@admon.CurrentGame.Players
+             AllowModifyingBoards=@admon.CurrentGame.IsItADraftGame
+             OnEditingInfo=@(player => { admon.TransitionToEditPlayerInfo(player); UpdateUI(); })
+             OnAddingBoard=@(player => { admon.AddBoardToPlayer(player); UpdateUI(); })
+             OnRemovingBoard=@(player => { admon.RemoveBoardFromPlayer(player); UpdateUI(); })
+             OnSettingWinner=@(async winner => { await admon.SetWinner(winner); UpdateUI(); })
+             OnRemovingPlayer=@(player => { admon.RemovePlayer(player); UpdateUI(); })
+             IsThereAWinnerAlready=@admon.IsThereAWinnerAlready />
+
+    <MasterBoard CanItBeShown=@(!admon.CurrentGame.IsItADraftGame)
+                 State=@admon.CurrentGame.MasterBoard
+                 OnBallClick=@(async ball => { await admon.PlayBall(ball); UpdateUI(); })
+                 OnPlayRandomBallClick=@(async () => { await admon.PlayBallRandomly(); UpdateUI(); })
+                 PlayedBalls=@admon.CurrentGame.BallsPlayed
+                 IsThereAWinnerAlready=@admon.IsThereAWinnerAlready />
+}
+
+@if (admon.CanCopyPlayersFromOtherGameSectionBeShown)
+{
+    <h3>Ahora vamos a copiar jugadores desde otro juego. Por favor selecciona el juego origen desde el cual deseas copiar sus jugadores</h3>
+    <br />
+    <button class="btn btn-danger" @onclick=admon.CancelCopyPlayersFromGame>Cancelar y Regresar a la edición del juego</button>
+    <br /><br /><br />
+    <div class="container-fluid">
+        <div class="row">
+            @foreach (var game in admon.OtherGames)
+            {
+                <div class="col">
+                    <button class="btn btn-outline-primary" @onclick=@(() => admon.CopyPlayersFromGame(game))>@game.Name</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (admon.CanNewPlayerSectionBeShown || admon.CanEditPlayerSectionBeShown)
+{
+    <EditForm Model=admon.PlayerModel OnValidSubmit=admon.SavePlayerInfo>
+        <DataAnnotationsValidator />
+        <div class="form-row">
+            <div class="col">
+                <label for=@admon.PlayerModel.Name>Nombre del Jugador</label>
+                <InputText type="text" class="form-control" placeholder="Escriba un nombre del jugador" @bind-Value=admon.PlayerModel.Name />
+                <ValidationMessage For="@(() => admon.PlayerModel.Name)" />
+            </div>
+        </div>
+        <button type="reset" class="btn btn-secondary" @onclick=admon.CancelAddingOrEditingPlayerInfo>Cancelar</button>
+        <button type="submit" class="btn btn-primary">Almacenar jugador</button>
+    </EditForm>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await admon.InitializeComponent();
+    }
+
+    private void UpdateUI()
+    {
+        StateHasChanged();
+    }
+}

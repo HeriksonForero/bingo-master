@@ -1,0 +1,63 @@
+﻿@using WebUI.Models.GameAdmon
+
+<div style=@(CanItBeShown ? "" : "display: none;")>
+    <button class="btn btn-warning" 
+            disabled=@IsThereAWinnerAlready
+            @onclick=@(() => OnPlayRandomBallClick?.Invoke())>Jugar aleatoriamente</button>
+    <br /><br />
+    <div class="bingo-balls-played"
+         style="display: @(this._ballsPlayedInReverseOrder.Count > 0 ? "block" : "none")">
+        <h4>Bolas jugadas (en el orden en que fueron jugadas)</h4>
+        <div style="width: 70vw; overflow-x: auto; white-space: nowrap;">
+            @foreach (var ball in this._ballsPlayedInReverseOrder)
+            {
+                <button disabled class="btn btn-outline-info">@ball.Entity.Name</button>
+            }
+        </div>
+    </div>
+    <br />
+    <table>
+        <tbody>
+        @foreach (var state in State)
+        {
+            <tr>
+                <td>@state.Key</td>
+                @foreach (var ball in state.Value)
+                {
+                    <td><button disabled=@(ball.WasItPlayed || IsThereAWinnerAlready)
+                                class="btn @(ball.WasItPlayed ? "btn-success" : "btn-outline-primary")" 
+                                @onclick=@(() => OnBallClick?.Invoke(ball))>@ball.Number</button></td>
+                }
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<BallModel> _ballsPlayedInReverseOrder;
+
+    [Parameter]
+    public bool CanItBeShown { get; set; }
+
+    [Parameter]
+    public Dictionary<string, List<BallModel>> State { get; set; }
+
+    [Parameter]
+    public Action<BallModel> OnBallClick { get; set; }
+
+    [Parameter]
+    public Action OnPlayRandomBallClick { get; set; }
+
+    [Parameter]
+    public List<BallModel> PlayedBalls { get; set; }
+
+    [Parameter]
+    public bool IsThereAWinnerAlready { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        this._ballsPlayedInReverseOrder = new List<BallModel>(PlayedBalls);
+        this._ballsPlayedInReverseOrder.Reverse();
+    }
+}
