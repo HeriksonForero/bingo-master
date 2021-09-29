@@ -1,53 +1,34 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Documentos para la acción de implementación de Azure Web Apps: https://github.com/Azure/webapps-deploy
+# Más acciones de GitHub para Azure: https://github.com/Azure/actions
 
-name: Build and deploy WAR app to Azure Web App - bingosonda
+name : compile e implemente la aplicación Node.js en Azure Web App - webauthntest
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+en :
+  empujar :
+    ramas :
+      - maestro
 
-jobs:
-  build:
-    runs-on: windows-latest
+trabajos :
+  construir e implementar :
+    se ejecuta : ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
+    pasos :
+    - usos : acciones / checkout @ master
 
-      - name: Set up Java version
-        uses: actions/setup-java@v1
-        with:
-          java-version: '11'
+    - nombre : configura la versión de Node.js
+      usos : acciones / setup-node @ v1
+      con :
+        nodo-version : ' 12.x '
 
-      - name: Build with Maven
-        run: mvn clean install
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v2
-        with:
-          name: java-app
-          path: '${{ github.workspace }}/target/*.war'
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v2
-        with:
-          name: java-app
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: 'bingosonda'
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A8467CC9F48C4999BCEA058FCD5F5589 }}
-          package: '*.war'
+    - nombre : npm install, build y test
+      ejecutar : |
+        npm install
+        npm ejecutar build --si-present
+        prueba de ejecución npm --si-present
+    - nombre : ' Implementar en la aplicación web de Azure '
+      utiliza : azure / webapps-deploy @ v1
+      con :
+        nombre de la aplicación : ' webauthntest '
+        nombre de ranura : ' producción '
+        publicar-perfil : $ {{secrets.AzureAppService_PublishProfile_e19e0fa662fe473a9ce6c39415fcb1de}}
+        empaquetar : .
